@@ -1,0 +1,45 @@
+{
+  "name": "incident_meal_check",
+  "description": "Decides whether a long-running incident's on-call team gets pizza, and how much",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["hours_running"],
+  "tasks": [
+    {
+      "name": "long_enough",
+      "taskReferenceName": "long_enough_ref",
+      "type": "SWITCH",
+      "evaluatorType": "graaljs",
+      "expression": "(function () { return $.hours >= 2 ? 'feed' : 'not_yet'; })();",
+      "inputParameters": { "hours": "${workflow.input.hours_running}" },
+      "decisionCases": {
+        "feed": [
+          {
+            "name": "plan_order",
+            "taskReferenceName": "plan_ref",
+            "type": "INLINE",
+            "inputParameters": {
+              "evaluatorType": "graaljs",
+              "expression": "(function () { var people = 4; return 'Order ' + Math.ceil(people / 2) + ' pizzas for INC-1042.'; })();"
+            }
+          }
+        ]
+      },
+      "defaultCase": [
+        {
+          "name": "not_yet",
+          "taskReferenceName": "not_yet_ref",
+          "type": "INLINE",
+          "inputParameters": {
+            "evaluatorType": "graaljs",
+            "expression": "(function () { return 'No pizza yet. Keep debugging.'; })();"
+          }
+        }
+      ]
+    }
+  ],
+  "outputParameters": {
+    "order": "${plan_ref.output.result}",
+    "not_yet": "${not_yet_ref.output.result}"
+  }
+}
